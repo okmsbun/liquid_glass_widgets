@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Fixed `GlassSegmentedControl` drag snapping:** Releasing over an intermediate segment now selects that segment, including fast horizontal, vertical, and RTL drags. Snap indices use the spacing between segment centers rather than the full track's segment width, and fixed controls no longer project release velocity past the intended segment. Cancelled drags use the same corrected center mapping.
+
 # 1.17.3
 
 ## Features

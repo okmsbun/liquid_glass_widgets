@@ -11,9 +11,8 @@
 // because its gesture architecture differs in two key ways:
 //   1. Tap handling uses per-segment GestureDetectors (correct for equal-width
 //      segments) rather than a single global-position→index mapping.
-//   2. Drag-end snapping uses DraggableIndicatorPhysics.computeTargetIndex
-//      (floor-based bin selection, consistent with tab_bar_internal.dart),
-//      whereas the mixin uses a round-based formula tuned for GlassTabBar.
+//   2. Drag-end snapping selects the nearest segment center without projecting
+//      swipe velocity, so releasing over a segment does not skip past it.
 // Both the tab bar and segmented control already share the right abstractions:
 // DraggableIndicatorPhysics, AnimatedGlassIndicator, and GlassSpring.
 
@@ -183,6 +182,13 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     );
   }
 
+  int _nearestSegmentIndex() {
+    final lastIndex = widget.segments.length - 1;
+    final relative = (_mainAlign + 1) / 2;
+    // Alignment spans the first and last centers, not the full track width.
+    return (relative * lastIndex).round().clamp(0, lastIndex);
+  }
+
   // ── Gesture handlers ──────────────────────────────────────────────────────
 
   void _onDragDown(DragDownDetails details) {
@@ -198,32 +204,13 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     });
   }
 
-  void _onDragEnd(DragEndDetails details) {
+  void _onDragEnd(DragEndDetails _) {
+    final targetSegmentIndex = _nearestSegmentIndex();
     setState(() {
       _isDragging = false;
       _isDown = false;
+      _mainAlign = _computeAlignmentForSegment(targetSegmentIndex);
     });
-
-    final box = context.findRenderObject()! as RenderBox;
-    final currentRelative = (_mainAlign + 1) / 2;
-    final segmentWidth = 1.0 / widget.segments.length;
-    final indicatorWidth = 1.0 / widget.segments.length;
-    final draggableRange = 1.0 - indicatorWidth;
-    final mainVelocity = widget.direction == Axis.horizontal
-        ? details.velocity.pixelsPerSecond.dx
-        : details.velocity.pixelsPerSecond.dy;
-    final mainExtent =
-        widget.direction == Axis.horizontal ? box.size.width : box.size.height;
-    final velocityX = (mainVelocity / mainExtent) / draggableRange;
-
-    final targetSegmentIndex = DraggableIndicatorPhysics.computeTargetIndex(
-      currentRelativeX: currentRelative,
-      velocityX: velocityX,
-      itemWidth: segmentWidth,
-      itemCount: widget.segments.length,
-    );
-
-    _mainAlign = _computeAlignmentForSegment(targetSegmentIndex);
 
     if (targetSegmentIndex != widget.selectedIndex) {
       widget.onSegmentSelected(targetSegmentIndex);
@@ -232,13 +219,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
 
   void _onDragCancel() {
     if (_isDragging) {
-      final currentRelative = (_mainAlign + 1) / 2;
-      final targetSegmentIndex = DraggableIndicatorPhysics.computeTargetIndex(
-        currentRelativeX: currentRelative,
-        velocityX: 0,
-        itemWidth: 1.0 / widget.segments.length,
-        itemCount: widget.segments.length,
-      );
+      final targetSegmentIndex = _nearestSegmentIndex();
       setState(() {
         _isDragging = false;
         _isDown = false;
