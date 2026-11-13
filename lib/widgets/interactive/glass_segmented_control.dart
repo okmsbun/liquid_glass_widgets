@@ -28,7 +28,7 @@ import '../../src/widgets/interactive/segmented_control_internal.dart';
 ///
 /// - **Animated Glass Indicator**: Smoothly animates between segments
 /// - **Jelly Physics**: Organic squash and stretch effects during movement
-/// - **Drag Support**: Swipe between segments with velocity-based snapping
+/// - **Drag Support**: Drag between fixed segments and release to select the nearest
 /// - **Sharp Text**: Selected text stays sharp above the glass
 /// - **Flexible Sizing**: Automatically sizes segments evenly
 /// - **Customizable Appearance**: Full control over colors, sizes, and effects
